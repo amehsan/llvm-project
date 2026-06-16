@@ -10,7 +10,7 @@
 
 define i32 @f(i32 %N, i32 %M) #0 {
 ; CHECK: IsPerfect=true, Depth=1, OutermostLoop: for.j, Loops: ( for.j )
-; CHECK: IsPerfect=true, Depth=2, OutermostLoop: for.i, Loops: ( for.i for.j )
+; CHECK: IsPerfect=false, Depth=2, OutermostLoop: for.i, Loops: ( for.i for.j )
 entry:
   %cmp4 = icmp slt i32 0, %N
   br i1 %cmp4, label %for.i.ph, label %for.i.end
@@ -172,8 +172,8 @@ for.i.end:                                        ; preds = %for.i.end_crit_edge
 ; }
 define i32 @h(i32 %N, i32 %M, i32 %K) #0 {
 ; CHECK: IsPerfect=true, Depth=1, OutermostLoop: for.k, Loops: ( for.k )
-; CHECK: IsPerfect=true, Depth=2, OutermostLoop: for.j, Loops: ( for.j for.k )
-; CHECK: IsPerfect=true, Depth=3, OutermostLoop: for.i, Loops: ( for.i for.j for.k )
+; CHECK: IsPerfect=false, Depth=2, OutermostLoop: for.j, Loops: ( for.j for.k )
+; CHECK: IsPerfect=false, Depth=3, OutermostLoop: for.i, Loops: ( for.i for.j for.k )
 entry:
   %cmp8 = icmp slt i32 0, %N
   br i1 %cmp8, label %for.i.ph, label %for.i.end

@@ -7,7 +7,7 @@
 
 define void @perf_nest_2D_1(ptr %y, ptr %x, i64 signext %nx, i64 signext %ny) {
 ; CHECK-LABEL: IsPerfect=true, Depth=1, OutermostLoop: perf_nest_2D_1_loop_j, Loops: ( perf_nest_2D_1_loop_j )
-; CHECK-LABEL: IsPerfect=true, Depth=2, OutermostLoop: perf_nest_2D_1_loop_i, Loops: ( perf_nest_2D_1_loop_i perf_nest_2D_1_loop_j )
+; CHECK-LABEL: IsPerfect=false, Depth=2, OutermostLoop: perf_nest_2D_1_loop_i, Loops: ( perf_nest_2D_1_loop_i perf_nest_2D_1_loop_j )
 entry:
   br label %perf_nest_2D_1_loop_i
 
@@ -87,7 +87,7 @@ perf_nest_2D_2_loop_i_end:
 
 define void @perf_nest_2D_3(ptr %y, ptr %x, i64 signext %nx, i64 signext %ny) {
 ; CHECK-LABEL: IsPerfect=true, Depth=1, OutermostLoop: perf_nest_2D_3_loop_j, Loops: ( perf_nest_2D_3_loop_j )
-; CHECK-LABEL: IsPerfect=true, Depth=2, OutermostLoop: perf_nest_2D_3_loop_i, Loops: ( perf_nest_2D_3_loop_i perf_nest_2D_3_loop_j )
+; CHECK-LABEL: IsPerfect=false, Depth=2, OutermostLoop: perf_nest_2D_3_loop_i, Loops: ( perf_nest_2D_3_loop_i perf_nest_2D_3_loop_j )
 entry:
   br label %perf_nest_2D_3_loop_i
 
@@ -143,8 +143,8 @@ perf_nest_2D_3_loop_i_end:
 
 define void @perf_nest_3D_1(ptr %y, ptr %x, i32 signext %nx, i32 signext %ny, i32 signext %nk) {
 ; CHECK-LABEL: IsPerfect=true, Depth=1, OutermostLoop: perf_nest_3D_1_loop_k, Loops: ( perf_nest_3D_1_loop_k )
-; CHECK-NEXT: IsPerfect=true, Depth=2, OutermostLoop: perf_nest_3D_1_loop_j, Loops: ( perf_nest_3D_1_loop_j perf_nest_3D_1_loop_k )
-; CHECK-NEXT: IsPerfect=true, Depth=3, OutermostLoop: perf_nest_3D_1_loop_i, Loops: ( perf_nest_3D_1_loop_i perf_nest_3D_1_loop_j perf_nest_3D_1_loop_k )
+; CHECK-NEXT: IsPerfect=false, Depth=2, OutermostLoop: perf_nest_3D_1_loop_j, Loops: ( perf_nest_3D_1_loop_j perf_nest_3D_1_loop_k )
+; CHECK-NEXT: IsPerfect=false, Depth=3, OutermostLoop: perf_nest_3D_1_loop_i, Loops: ( perf_nest_3D_1_loop_i perf_nest_3D_1_loop_j perf_nest_3D_1_loop_k )
 entry:
   br label %perf_nest_3D_1_loop_i
 
@@ -278,7 +278,7 @@ perf_nest_3D_2_loop_i_end:
 
 define signext i32 @perf_nest_live_out(i32 signext %x, i32 signext %ni, i32 signext %nj) {
 ; CHECK-LABEL: IsPerfect=true, Depth=1, OutermostLoop: perf_nest_live_out_loop_j, Loops: ( perf_nest_live_out_loop_j )
-; CHECK-LABEL: IsPerfect=true, Depth=2, OutermostLoop: perf_nest_live_out_loop_i, Loops: ( perf_nest_live_out_loop_i perf_nest_live_out_loop_j )
+; CHECK-LABEL: IsPerfect=false, Depth=2, OutermostLoop: perf_nest_live_out_loop_i, Loops: ( perf_nest_live_out_loop_i perf_nest_live_out_loop_j )
 entry:
   %cmp4 = icmp slt i32 0, %ni
   br i1 %cmp4, label %perf_nest_live_out_loop_i.lr.ph, label %for.end7
@@ -331,7 +331,7 @@ for.end7:
 ;     }
 define double @perf_nest_guard_branch(ptr %y, ptr %x, i32 signext %nx, i32 signext %ny) {
 ; CHECK-LABEL: IsPerfect=true, Depth=1, OutermostLoop: test6Loop2, Loops: ( test6Loop2 )
-; CHECK-LABEL: IsPerfect=true, Depth=2, OutermostLoop: test6Loop1, Loops: ( test6Loop1 test6Loop2 )
+; CHECK-LABEL: IsPerfect=false, Depth=2, OutermostLoop: test6Loop1, Loops: ( test6Loop1 test6Loop2 )
 entry:
   %cmp2 = icmp slt i32 0, %nx
   br i1 %cmp2, label %test6Loop1.lr.ph, label %for.end13
@@ -404,7 +404,7 @@ for.end13:                                        ; preds = %for.cond.for.end13_
 
 define double @test6(ptr %y, ptr %x, i32 signext %nx, i32 signext %ny) {
 ; CHECK-LABEL: IsPerfect=true, Depth=1, OutermostLoop: test6Loop2, Loops: ( test6Loop2 )
-; CHECK-LABEL: IsPerfect=true, Depth=2, OutermostLoop: test6Loop1, Loops: ( test6Loop1 test6Loop2 )
+; CHECK-LABEL: IsPerfect=false, Depth=2, OutermostLoop: test6Loop1, Loops: ( test6Loop1 test6Loop2 )
 entry:
   %cmp2 = icmp slt i32 0, %nx
   br i1 %cmp2, label %test6Loop1.lr.ph, label %for.end13
