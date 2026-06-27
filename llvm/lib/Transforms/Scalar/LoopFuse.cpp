@@ -163,19 +163,25 @@ struct FusionCandidate {
         ExitingBlock(L->getExitingBlock()), ExitBlock(L->getExitBlock()),
         Latch(L->getLoopLatch()), L(L), Valid(true),
         GuardBranch(L->getLoopGuardBranch()), PP(PP), AbleToPeel(canPeel(L)),
-        Peeled(false), DT(DT), PDT(PDT), ORE(ORE) {
+        Peeled(false), DT(DT), PDT(PDT), ORE(ORE) {}
 
-    // Walk over all blocks in the loop and check for conditions that may
-    // prevent fusion. For each block, walk over all instructions and collect
-    // the memory reads and writes If any instructions that prevent fusion are
-    // found, invalidate this object and return.
+  /// Walk over all blocks in the loop and check for conditions that may prevent
+  /// fusion. For each block, walk over all instructions and collect the memory
+  /// reads and writes. If any instructions that prevent fusion are found,
+  /// invalidate this object and return false.
+  ///
+  /// This is separated from the constructor so it can be deferred until after
+  /// the cheap structural eligibility checks (see isEligibleForFusion) have
+  /// passed. Loops that fail those checks are discarded without paying for a
+  /// full walk of every instruction in the loop body.
+  bool collectMemAccessesAndValidate() {
     for (BasicBlock *BB : L->blocks()) {
       if (BB->hasAddressTaken()) {
         invalidate();
         ++AddressTakenBB;
         reportInvalidCandidate("AddressTakenBB",
                                "Basic block has address taken");
-        return;
+        return false;
       }
 
       for (Instruction &I : *BB) {
@@ -184,14 +190,14 @@ struct FusionCandidate {
           ++MayThrowException;
           reportInvalidCandidate("MayThrowException",
                                  "Loop may throw an exception");
-          return;
+          return false;
         }
         if (I.isVolatile()) {
           invalidate();
           ++ContainsVolatileAccess;
           reportInvalidCandidate("ContainsVolatileAccess",
                                  "Loop contains a volatile access");
-          return;
+          return false;
         }
         // Atomic accesses impose ordering/synchronization constraints that the
         // dependence analysis used for fusion does not model, so reordering
@@ -201,7 +207,7 @@ struct FusionCandidate {
           ++ContainsAtomicAccess;
           reportInvalidCandidate("ContainsAtomicAccess",
                                  "Loop contains an atomic access");
-          return;
+          return false;
         }
         if (I.mayWriteToMemory())
           MemWrites.push_back(&I);
@@ -209,6 +215,7 @@ struct FusionCandidate {
           MemReads.push_back(&I);
       }
     }
+    return true;
   }
 
   /// Check if all members of the class are valid.
@@ -559,7 +566,11 @@ private:
       TTI::PeelingPreferences PP =
           gatherPeelingPreferences(L, SE, TTI, std::nullopt, std::nullopt);
       FusionCandidate CurrCand(L, DT, &PDT, ORE, PP);
-      if (!CurrCand.isEligibleForFusion(SE))
+      // Check the cheap structural requirements first, then perform the full
+      // walk of the loop body to collect memory accesses and validate it. This
+      // avoids scanning every instruction in loops that are not even eligible.
+      if (!CurrCand.isEligibleForFusion(SE) ||
+          !CurrCand.collectMemAccessesAndValidate())
         continue;
 
       // Go through each list in FusionCandidates and determine if the first or
@@ -912,8 +923,12 @@ private:
 
         FusionCandidate FusedCand(performFusion((Peel ? FC0Copy : FC0), FC1),
                                   DT, &PDT, ORE, FC0Copy.PP);
+        // Collect the memory accesses of the fused loop so it can be considered
+        // for further fusion with the next candidate in the list.
+        bool FusedValid = FusedCand.collectMemAccessesAndValidate();
+        (void)FusedValid;
         FusedCand.verify();
-        assert(FusedCand.isEligibleForFusion(SE) &&
+        assert(FusedValid && FusedCand.isEligibleForFusion(SE) &&
                "Fused candidate should be eligible for fusion!");
 
         // Notify the loop-depth-tree that these loops are not valid objects
